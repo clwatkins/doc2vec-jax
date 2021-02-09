@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "doc2vec"
+version = "0.1.0"
+description = ""
+authors = ["Chris Watkins <chris.watkins93@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+absl-py = "^0.11.0"
+jax = "^0.2.9"
+jaxlib = "^0.1.59"
+dm-haiku = {git = "https://github.com/deepmind/dm-haiku"}
+optax = "^0.0.2"
+wandb = "^0.10.17"
+tensorflow = "^2.4.1"
+
+[tool.poetry.dev-dependencies]
+pydocstyle = "^5.1.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
