@@ -23,6 +23,9 @@ FLAGS = flags.FLAGS
 flags.DEFINE_integer('batch_size', 128, help='Batch size')
 flags.DEFINE_integer('training_epochs', 10, help='Num epochs to train')
 flags.DEFINE_integer('embedding_size', 128, help='Embedding size')
+flags.DEFINE_enum('context_mode', 'average', ['concat', 'average'],
+                  help='How to combine context embeddings in the PV-DM model. '
+                       'They can either be concatenated (large and slow), or averaged.')
 flags.DEFINE_float('learning_rate', 1e-3, help='Optimizer learning rate')
 flags.DEFINE_enum('optimizer', 'adam', ['sgd', 'adam'],
                   help='optimizer to use. momentum only applied if SGD')
@@ -34,21 +37,22 @@ flags.DEFINE_bool('wandb', True,
                   help='Whether to track experiment using W&B')
 flags.DEFINE_string('wandb_project', 'doc2vec-pvdm',
                     help='W&B project name to track experiment under')
+flags.DEFINE_integer('random_seed', 1234, help='Seed used to shuffle input data and initialise model')
 
 flags.register_validator(
     flag_name='model_dir',
-    checker=lambda fp: Path(fp).exists(),
+    checker=lambda fp: Path(fp).expanduser().exists(),
     message='One of your file/directory paths appears not to exist'
 )
 
 LOG_FMT_STRING = 'Epoch {epoch} | Batch {batch} | Accuracy {accuracy:.1%} | Loss {loss:.2f}'
 MODEL_NAME_PATTERN = '{model_name}_{dataset_name}_{window_size}window_{vocab_size}vocab_' \
-                     '{embedding_size}embeddingdim_{batch_size}batch_{optimizer}optim_' \
+                     '{embedding_size}embeddingdim_{context_mode}context_model_{batch_size}batch_{optimizer}optim_' \
                      '{learning_rate}lr_{momentum}momentum_{training_epochs}epochs'
 
 
-def _load_dataset_and_vocabs_from_file() -> tf.data.Dataset:
-    data_dir = Path(FLAGS.training_data_dir) / 'training_data' / \
+def _load_dataset_and_vocabs_from_file() -> Tuple[tf.data.Dataset, List[str], List[str]]:
+    data_dir = Path(FLAGS.training_data_dir).expanduser() / 'training_data' / \
         DATASET_NAME_PATTERN.format(
             dataset_name=FLAGS.dataset_name,
             window_size=FLAGS.window_size,
@@ -141,6 +145,7 @@ def main(_):
             doc_vocab_size=len(doc_vocab),
             embedding_size=FLAGS.embedding_size,
             window_size=FLAGS.window_size,
+            context_mode=FLAGS.context_mode,
             name=FLAGS.model_name
         )
         return pvdm(doc_id, context_words)
@@ -151,24 +156,24 @@ def main(_):
         window_size=FLAGS.window_size,
         vocab_size=FLAGS.vocab_size,
         embedding_size=FLAGS.embedding_size,
+        context_mode=FLAGS.context_mode,
         batch_size=FLAGS.batch_size,
         optimizer=FLAGS.optimizer,
         learning_rate=FLAGS.learning_rate,
         momentum=FLAGS.momentum,
         training_epochs=FLAGS.training_epochs
     )
-    model_save_dir = Path(FLAGS.model_dir) / model_name
+    model_save_dir = Path(FLAGS.model_dir).expanduser() / model_name
 
     if FLAGS.wandb:
         wandb.init(project=FLAGS.wandb_project)
         wandb.config.update(FLAGS)
         wandb.run.name = model_name + "_" + dt.datetime.now().strftime('%Y%m%d_%H%M%S')
-        wandb.run.save()
 
     logging.info('Loading training data...')
     training_data, word_vocab, doc_vocab = _load_dataset_and_vocabs_from_file()
     training_data = training_data\
-        .shuffle(buffer_size=FLAGS.batch_size * 5, reshuffle_each_iteration=True)\
+        .shuffle(buffer_size=FLAGS.batch_size * 5, reshuffle_each_iteration=True, seed=FLAGS.random_seed)\
         .batch(FLAGS.batch_size)\
         .prefetch(5)
 
@@ -189,7 +194,7 @@ def main(_):
         raise AssertionError('Expected optimizer `sgd` or `adam`')
 
     init_doc, init_context, _ = next(training_iter)
-    model_params = model.init(jax.random.PRNGKey(123), init_doc, init_context)
+    model_params = model.init(jax.random.PRNGKey(FLAGS.random_seed), init_doc, init_context)
     opt_state = optimizer.init(model_params)
 
     logging.info('Beginning training...')

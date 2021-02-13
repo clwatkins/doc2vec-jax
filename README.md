@@ -14,9 +14,11 @@ Currently, we only implement `PV-DM`, which extends Word2Vec's `CBOW` method to 
 - `doc2vec` contains the core implementation, including code to prepare documents for training
 - `experiments` contains key experiments described in the original paper, reimplemented here
 
-For reference, we reach the performance mentioned.
+Note: `pyproject.toml`'s `jaxlib` dependency will be CPU-only by default. See JAX's installation instructions for 
+documentation on how to install a GPU-compatible version of the library.
 
 ## TODO
 
-- [] `DBOW` model variant
-- [] Negative sampling
+- [ ] `DBOW` model variant
+- [ ] Negative sampling
+- [ ] Parallelise training data generation

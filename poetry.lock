@@ -102,7 +102,7 @@ jaxlib = ["jaxlib (>=0.1.49)"]
 type = "git"
 url = "https://github.com/deepmind/dm-haiku"
 reference = "master"
-resolved_reference = "0a469026978b06c98d227fd607d6ee220efff307"
+resolved_reference = "a83447da39f92ac9f691ceacbd740d426025e25f"
 
 [[package]]
 name = "dm-tree"
@@ -155,7 +155,7 @@ smmap = ">=3.0.1,<4"
 
 [[package]]
 name = "gitpython"
-version = "3.1.12"
+version = "3.1.13"
 description = "Python Git Library"
 category = "main"
 optional = false
@@ -166,7 +166,7 @@ gitdb = ">=4.0.1,<5"
 
 [[package]]
 name = "google-auth"
-version = "1.25.0"
+version = "1.26.1"
 description = "Google Authentication Library"
 category = "main"
 optional = false
@@ -256,7 +256,7 @@ opt_einsum = "*"
 
 [[package]]
 name = "jaxlib"
-version = "0.1.60"
+version = "0.1.61"
 description = "XLA library for JAX"
 category = "main"
 optional = false
@@ -265,7 +265,7 @@ python-versions = ">=3.6"
 [package.dependencies]
 absl-py = "*"
 flatbuffers = "*"
-numpy = ">=1.12,<1.20"
+numpy = ">=1.16"
 scipy = "*"
 
 [[package]]
@@ -497,7 +497,7 @@ numpy = ">=1.16.5"
 
 [[package]]
 name = "sentry-sdk"
-version = "0.19.5"
+version = "0.20.1"
 description = "Python client for Sentry (https://sentry.io)"
 category = "main"
 optional = false
@@ -677,7 +677,7 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 
 [[package]]
 name = "wandb"
-version = "0.10.17"
+version = "0.10.18"
 description = "A CLI and library for interacting with the Weights and Biases API."
 category = "main"
 optional = false
@@ -705,6 +705,7 @@ aws = ["boto3"]
 gcp = ["google-cloud-storage"]
 grpc = ["grpcio (==1.27.2)"]
 kubeflow = ["kubernetes", "minio", "google-cloud-storage", "sh"]
+media = ["numpy", "moviepy", "pillow", "bokeh", "soundfile", "plotly"]
 
 [[package]]
 name = "werkzeug"
@@ -800,12 +801,12 @@ gitdb = [
     {file = "gitdb-4.0.5.tar.gz", hash = "sha256:c9e1f2d0db7ddb9a704c2a0217be31214e91a4fe1dea1efad19ae42ba0c285c9"},
 ]
 gitpython = [
-    {file = "GitPython-3.1.12-py3-none-any.whl", hash = "sha256:867ec3dfb126aac0f8296b19fb63b8c4a399f32b4b6fafe84c4b10af5fa9f7b5"},
-    {file = "GitPython-3.1.12.tar.gz", hash = "sha256:42dbefd8d9e2576c496ed0059f3103dcef7125b9ce16f9d5f9c834aed44a1dac"},
+    {file = "GitPython-3.1.13-py3-none-any.whl", hash = "sha256:c5347c81d232d9b8e7f47b68a83e5dc92e7952127133c5f2df9133f2c75a1b29"},
+    {file = "GitPython-3.1.13.tar.gz", hash = "sha256:8621a7e777e276a5ec838b59280ba5272dd144a18169c36c903d8b38b99f750a"},
 ]
 google-auth = [
-    {file = "google-auth-1.25.0.tar.gz", hash = "sha256:514e39f4190ca972200ba33876da5a8857c5665f2b4ccc36c8b8ee21228aae80"},
-    {file = "google_auth-1.25.0-py2.py3-none-any.whl", hash = "sha256:008e23ed080674f69f9d2d7d80db4c2591b9bb307d136cea7b3bc129771d211d"},
+    {file = "google-auth-1.26.1.tar.gz", hash = "sha256:1b461d079b5650efe492a7814e95c536ffa9e7a96e39a6d16189c1604f18554f"},
+    {file = "google_auth-1.26.1-py2.py3-none-any.whl", hash = "sha256:8ce6862cf4e9252de10045f05fa80393fde831da9c2b45c39288edeee3cde7f2"},
 ]
 google-auth-oauthlib = [
     {file = "google-auth-oauthlib-0.4.2.tar.gz", hash = "sha256:65b65bc39ad8cab15039b35e5898455d3d66296d0584d96fe0e79d67d04c51d9"},
@@ -896,14 +897,14 @@ jax = [
     {file = "jax-0.2.9.tar.gz", hash = "sha256:c563c97fae7b85b0f5622522f9fbdf61e04bf0d1e50888a644bdc966b5c1f274"},
 ]
 jaxlib = [
-    {file = "jaxlib-0.1.60-cp36-none-macosx_10_9_x86_64.whl", hash = "sha256:eab6715820de2d3be99bcf1bd6e74fc062288eec921aec6ad061eff215fcbd23"},
-    {file = "jaxlib-0.1.60-cp36-none-manylinux2010_x86_64.whl", hash = "sha256:21bbe2b328a728accb6ee6d370ec948317becc0e32c4921ff5240260fe21206a"},
-    {file = "jaxlib-0.1.60-cp37-none-macosx_10_9_x86_64.whl", hash = "sha256:f74edc451531a7d12c49c18344db09183ee93c7533c58c120d5444f5d5f8da73"},
-    {file = "jaxlib-0.1.60-cp37-none-manylinux2010_x86_64.whl", hash = "sha256:231539132e6322a1d65329bbadcb56cbd2495f584a759437881ee4c163250247"},
-    {file = "jaxlib-0.1.60-cp38-none-macosx_10_9_x86_64.whl", hash = "sha256:4f0accb342d2559b2c199c9d9267ea011c543060213ab9fd03ffb75f6c0150b9"},
-    {file = "jaxlib-0.1.60-cp38-none-manylinux2010_x86_64.whl", hash = "sha256:7bff48c253c7bf5ad0986af8e14c981bc5f18855f6eef16f08da6ca915b092f4"},
-    {file = "jaxlib-0.1.60-cp39-none-macosx_10_9_x86_64.whl", hash = "sha256:3ebe62f1a389b59e0c1661a6d2c14762b68c5864bc07d7de26d81a1bd29b2060"},
-    {file = "jaxlib-0.1.60-cp39-none-manylinux2010_x86_64.whl", hash = "sha256:5afbf0a176f0b39e349fe3942fdd06f97093130961ae057d0e567fa247746088"},
+    {file = "jaxlib-0.1.61-cp36-none-macosx_10_9_x86_64.whl", hash = "sha256:d88866813d6438cbb2f545b6983091525bdbe8633dbbc3ea7842b2e5d561ec6b"},
+    {file = "jaxlib-0.1.61-cp36-none-manylinux2010_x86_64.whl", hash = "sha256:0ef0449dad105144fde97aaae33585b7186c6fb80390e77771a745cc9a937357"},
+    {file = "jaxlib-0.1.61-cp37-none-macosx_10_9_x86_64.whl", hash = "sha256:abbd90228b48add038969f116ea85dd10a9efd8db185bb1a1a6339e48e0c2a41"},
+    {file = "jaxlib-0.1.61-cp37-none-manylinux2010_x86_64.whl", hash = "sha256:cff3a541567b5723314687f71dbcfd349faf78d362b0a6e96a5f2c354015b59c"},
+    {file = "jaxlib-0.1.61-cp38-none-macosx_10_9_x86_64.whl", hash = "sha256:3f53fb31297cf07d43ebf0a434313861f90e6ac685b98996bc1b77b48c48e097"},
+    {file = "jaxlib-0.1.61-cp38-none-manylinux2010_x86_64.whl", hash = "sha256:e0b81fcf77579702b2068bafe379ba04d153bd19239ffc2fd2cbe8308ffe3953"},
+    {file = "jaxlib-0.1.61-cp39-none-macosx_10_9_x86_64.whl", hash = "sha256:72d08423116bfa4fdd58f0264e73feb4263643b0407a0fc619246d2c9f9b1366"},
+    {file = "jaxlib-0.1.61-cp39-none-manylinux2010_x86_64.whl", hash = "sha256:713f2799158128f7af45d8cfb627bd585f142da9314485f345ccd80bd2eaf8c5"},
 ]
 keras-preprocessing = [
     {file = "Keras_Preprocessing-1.1.2-py2.py3-none-any.whl", hash = "sha256:7b82029b130ff61cc99b55f3bd27427df4838576838c5b2f65940e4fcec99a7b"},
@@ -1113,8 +1114,7 @@ scipy = [
     {file = "scipy-1.6.0.tar.gz", hash = "sha256:cb6dc9f82dfd95f6b9032a8d7ea70efeeb15d5b5fd6ed4e8537bb3c673580566"},
 ]
 sentry-sdk = [
-    {file = "sentry-sdk-0.19.5.tar.gz", hash = "sha256:737a094e49a529dd0fdcaafa9e97cf7c3d5eb964bd229821d640bc77f3502b3f"},
-    {file = "sentry_sdk-0.19.5-py2.py3-none-any.whl", hash = "sha256:0a711ec952441c2ec89b8f5d226c33bc697914f46e876b44a4edd3e7864cf4d0"},
+    {file = "sentry-sdk-0.20.1.tar.gz", hash = "sha256:3693cb47ba8d90c004ac002425770b32aaf0c83a846ec48e2d1364e7db1d072d"},
 ]
 shortuuid = [
     {file = "shortuuid-1.0.1-py3-none-any.whl", hash = "sha256:492c7402ff91beb1342a5898bd61ea953985bf24a41cd9f247409aa2e03c8f77"},
@@ -1178,8 +1178,8 @@ urllib3 = [
     {file = "urllib3-1.26.3.tar.gz", hash = "sha256:de3eedaad74a2683334e282005cd8d7f22f4d55fa690a2a1020a416cb0a47e73"},
 ]
 wandb = [
-    {file = "wandb-0.10.17-py2.py3-none-any.whl", hash = "sha256:d535e889617720993ed4f6eaf613db21d84da40bd54239add55119dbe3b860d6"},
-    {file = "wandb-0.10.17.tar.gz", hash = "sha256:6f246b313e65561eb69cd616e7dfc921cbdd1840d769c535640d2dee593be0c5"},
+    {file = "wandb-0.10.18-py2.py3-none-any.whl", hash = "sha256:bb7340e603ba6ae76594be6689541daf9d9200fa08f54c8fde99533ca3b949e8"},
+    {file = "wandb-0.10.18.tar.gz", hash = "sha256:c0be20d833d1b9169a62197fcba021b557efbb1b42a603f9445c5f683dfe7739"},
 ]
 werkzeug = [
     {file = "Werkzeug-1.0.1-py2.py3-none-any.whl", hash = "sha256:2de2a5db0baeae7b2d2664949077c2ac63fbd16d98da0ff71837f7d1dea3fd43"},

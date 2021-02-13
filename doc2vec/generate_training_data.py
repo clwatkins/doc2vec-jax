@@ -11,7 +11,7 @@ from absl import logging
 import hashlib
 from pathlib import Path
 import re
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 
@@ -20,20 +20,19 @@ from doc2vec.text_helpers import flatten_nested_text, Vocabulary
 FLAGS = flags.FLAGS
 flags.DEFINE_integer('vocab_size', default=50_000, help='Vocab size')
 flags.DEFINE_integer('window_size', default=5, help='Window size')
-flags.DEFINE_string('training_data_dir', default=None, help='Path to directory containing training data. We expect a file for each document in the directory (corpus). Prepped data will be written to a sub-directory.')
+flags.DEFINE_string('training_data_dir', default=None,
+                    help='Path to directory containing training data. We expect a file for each document in the '
+                         'directory (corpus). Prepped data will be written to a sub-directory.')
 flags.DEFINE_string('dataset_name', None, help='Identifier for this dataset')
 
 flags.register_validator(
     flag_name='training_data_dir',
-    checker=lambda fp: Path(fp).exists(),
+    checker=lambda fp: Path(fp).expanduser().exists(),
     message='One of your file/directory paths appears not to exist'
 )
 
 NP_DTYPE = np.uint32
 DATASET_NAME_PATTERN = 'doc2vec_pvdm_{dataset_name}_{window_size}window_{vocab_size}vocab'
-
-# TODO(chriswatkins): implement negative sampling
-# TODO(chriswatkins): DBOW model variant
 
 
 def standardize_text(raw_document: str) -> List[str]:
@@ -41,7 +40,7 @@ def standardize_text(raw_document: str) -> List[str]:
 
     Inspired by: https://www.tensorflow.org/tutorials/text/word_embeddings#text_preprocessing
     """
-    output = raw_document.lower()  # lowercase
+    output = raw_document.lower()  # lowercase
     output = re.sub(r'<br />', ' ', output)  # remove HTML line breaks
     # TODO: fix this so punctuation doens't generate unnecessary spaces
     output = re.sub(r'[\W]+', ' ', output)  # remove non-alphanumerics
@@ -59,7 +58,7 @@ def _encode_text(document: List[str], vocab: Vocabulary) -> List[int]:
     return [vocab[word] for word in document]
 
 
-def _build_training_examples(text: List[int], doc_id: int, window_size: int) -> List[np.ndarray]:
+def _build_training_examples(text: List[int], doc_id: int, window_size: int) -> List[Tuple[int, np.ndarray, int]]:
     examples = []
 
     # Take a sliding window of length `window_size` to RHS of target word.
@@ -67,11 +66,11 @@ def _build_training_examples(text: List[int], doc_id: int, window_size: int) -> 
         target_word = text[w_idx - 1]
         context_words = text[w_idx:w_idx + window_size]
 
-        examples.append([
+        examples.append((
             doc_id,
             np.array(context_words, dtype=NP_DTYPE),
             target_word
-        ])
+        ))
 
     return examples
 
@@ -93,7 +92,7 @@ def run_pipeline(unused_argv):
     logging.info('Reading documents from file...')
 
     raw_documents = []
-    for document_fp in Path(FLAGS.training_data_dir).iterdir():
+    for document_fp in Path(FLAGS.training_data_dir).expanduser().iterdir():
         if document_fp.is_dir():
             continue
 
@@ -152,7 +151,7 @@ def run_pipeline(unused_argv):
     # === 7. Save training data and vocabularies to file ===
     logging.info('Saving data to file')
 
-    out_dir = Path(FLAGS.training_data_dir) / 'training_data' / \
+    out_dir = Path(FLAGS.training_data_dir).expanduser() / 'training_data' / \
         DATASET_NAME_PATTERN.format(
             dataset_name=FLAGS.dataset_name,
             window_size=FLAGS.window_size,

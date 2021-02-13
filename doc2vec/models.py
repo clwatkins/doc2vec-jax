@@ -9,7 +9,7 @@ class PVDM(hk.Module):
     """Implements a PV-DM Doc2Vec model."""
 
     def __init__(self, word_vocab_size: int, doc_vocab_size: int,
-                 embedding_size: int, window_size: int, name: str):
+                 embedding_size: int, window_size: int, context_mode: str, name: str):
         super().__init__(name=name)
         self.word_embedder = hk.Embed(
             vocab_size=word_vocab_size,
@@ -22,6 +22,7 @@ class PVDM(hk.Module):
 
         self.window_size = window_size
         self.embedding_size = embedding_size
+        self.context_mode = context_mode
 
     def __call__(self, doc_id, context_words):
         doc_embedding = self.doc_embedder(doc_id)
@@ -31,8 +32,13 @@ class PVDM(hk.Module):
 
         doc_and_word_embeddings = jnp.concatenate(
             [doc_embedding_expanded, word_embeddings], axis=1)
-        flattened = jnp.reshape(doc_and_word_embeddings,
-            (-1, (self.window_size + 1) * self.embedding_size))
+
+        if self.context_mode == 'concat':
+            flattened = jnp.reshape(doc_and_word_embeddings, (-1, (self.window_size + 1) * self.embedding_size))
+        elif self.context_mode == 'average':
+            flattened = jnp.mean(doc_and_word_embeddings, axis=1)  # Average across dim concatting doc + word vectors
+        else:
+            raise ValueError('context_mode must be set to either `concat` or `average`')
 
         logits = self.fc(flattened)
 
