@@ -5,11 +5,11 @@ IMDB dataset", where paragraph vectors are trained to represent an IMDB review, 
 
 This method was shown to out-perform other approaches:
 
-TODO: add screengrab of results
+![3.2 Results](../../resources/3_2_results.png)
 
 Here we seek to replicate their reported results, blending additional insights from the [Gensim reimplementation](https://radimrehurek.com/gensim/auto_examples/howtos/run_doc2vec_imdb.html) and discussion on the [word2vec-toolkit mailing list](https://groups.google.com/g/word2vec-toolkit/c/Q49FIrNOQRo/m/J6KG8mUj45sJ). First we'll train a Doc2Vec model to produce paragraph vectors for these reviews (training), and we'll then train a classifier to predict sentiment (evaluation).
 
-Doc2Vec training:
+## 1. Doc2Vec training
 
 - Training data comes from IMDB's `unsupervised` and `training` example sets (75k total). 
 - `window_size = 10` and `embedding_size = 100` (the paper reports `400`, but the Gensim reimplementation argues that does little to help performance, while blowing up memory requirements).
@@ -34,12 +34,19 @@ python -m doc2vec.train \
 --vocab_size 100_000 \
 --batch_size 32 \
 --context_mode average \
---embedding_size 50 \
+--embedding_size 100 \
 --training_epochs 10 \
 --wandb_project doc2vec-imdb-sentiment
 ```
 
-Questions:
-NS
-Gensim uses 2-sided window
-Preserve punctuation as words
+NOTE: you may face GPU memory issues (I did!) relating to [JAX's pre-allocation behaviour](https://jax.readthedocs.io/en/latest/gpu_memory_allocation.html#gpu-memory-allocation). If you have issues, consider over-riding defaults with eg `export XLA_PYTHON_CLIENT_PREALLOCATE=false`.
+
+Open questions:
+
+- Critical to use negative sampling?
+- No sub-sampling based on frequent words?
+- Need to concat output of both types of models?
+- Gensim uses 2-sided window -- we use 1-sided for now
+- Preserve punctuation as words? Currently strip it
+
+## 2. Classifier training

@@ -1,4 +1,4 @@
-"""Train model algorithm."""
+"""Train model."""
 from absl import app
 from absl import flags
 from absl import logging
@@ -11,6 +11,7 @@ from typing import Any, List, Tuple
 import haiku as hk
 import jax
 import jax.numpy as jnp
+import jax.profiler
 import optax
 import numpy as np
 import tensorflow as tf
@@ -109,6 +110,9 @@ def _get_similar_terms(comparison_terms: List[str],
 
 def main(_):
     """Run model training loop."""
+
+    tf.debugging.set_log_device_placement(True)
+    tf.config.set_soft_device_placement(True)
 
     @jax.jit
     def loss_fn(params: hk.Params, batch: Tuple[np.ndarray, np.ndarray, np.ndarray]) -> float:
