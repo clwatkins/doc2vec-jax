@@ -17,6 +17,14 @@ Currently, we only implement `PV-DM`, which extends Word2Vec's `CBOW` method to 
 Note: `pyproject.toml`'s `jaxlib` dependency will be CPU-only by default. See JAX's installation instructions for 
 documentation on how to install a GPU-compatible version of the library.
 
+## Installation
+
+### Via Docker
+- Ensure [nvidia-docker](https://github.com/NVIDIA/nvidia-docker) is installed
+- `sudo docker build -t doc2vec-jax .`
+- `sudo docker run --gpus all --name d2v-runner -it <container_id> /bin/bash`
+- `python -m doc2vec.train ...`
+
 ## TODO
 
 - [ ] `DBOW` model variant
