@@ -22,7 +22,8 @@ documentation on how to install a GPU-compatible version of the library.
 ### Via Docker
 - Ensure [nvidia-docker](https://github.com/NVIDIA/nvidia-docker) is installed
 - `sudo docker build -t doc2vec-jax .`
-- `sudo docker run --gpus all --name d2v-runner -it <container_id> /bin/bash`
+- `sudo docker run --gpus all -it doc2vec-jax:latest /bin/bash`
+- `poetry shell`
 - `python -m doc2vec.train ...`
 
 ## TODO

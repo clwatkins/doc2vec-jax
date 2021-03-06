@@ -1,5 +1,5 @@
-FROM nvidia/cuda:11.2.1-cudnn8-runtime-ubuntu20.04
 FROM python:3.8
+FROM nvidia/cuda:11.2.1-devel
 
 RUN pip install poetry
 
