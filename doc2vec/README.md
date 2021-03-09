@@ -21,6 +21,7 @@ python -m doc2vec.generate_training_data \
 ## Train model
 
 ```bash
+mkdir $HOME/doc2vec_models/
 python -m doc2vec.train \
 --training_data_dir $HOME/doc2vec_data/aclImdb/train/unsup \
 --dataset_name imdb_unsup \

@@ -1,4 +1,4 @@
-FROM nvidia/cuda:11.0.3-devel-ubuntu20.04
+FROM nvidia/cuda:11.0.3-cudnn8-devel-ubuntu20.04
 
 SHELL ["/bin/bash", "-c"]
 ENV HOME="/root"
