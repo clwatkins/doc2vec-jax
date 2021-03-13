@@ -32,7 +32,7 @@ flags.register_validator(
 )
 
 NP_DTYPE = np.uint32
-DATASET_NAME_PATTERN = 'doc2vec_pvdm_{dataset_name}_{window_size}window_{vocab_size}vocab'
+DATASET_NAME_PATTERN = 'doc2vec_{architecture}_{dataset_name}_{window_size}window_{vocab_size}vocab'
 
 
 def standardize_text(raw_document: str) -> List[str]:
@@ -64,11 +64,16 @@ def _build_training_examples(text: List[int], doc_id: int, window_size: int) -> 
     # Take a sliding window of length `window_size` to RHS of target word.
     for w_idx in range(1, len(text) - window_size):
         target_word = text[w_idx - 1]
-        context_words = text[w_idx:w_idx + window_size]
+
+        if FLAGS.architecture == 'pvdm':
+            context_words = np.array(text[w_idx:w_idx + window_size], dtype=NP_DTYPE)
+        else:
+            # DBOW doesn't require context words -- use a placerholder so the data struct can stay consistent
+            context_words = None
 
         examples.append((
             doc_id,
-            np.array(context_words, dtype=NP_DTYPE),
+            context_words,
             target_word
         ))
 
@@ -145,8 +150,9 @@ def run_pipeline(unused_argv):
     doc_ids, context_words, target_words = zip(*training_examples)
 
     doc_ids = np.array(doc_ids, dtype=NP_DTYPE)
-    context_words = np.array(context_words, dtype=NP_DTYPE)
     target_words = np.array(target_words, dtype=NP_DTYPE)
+    if FLAGS.architecture == 'pvdm':
+        context_words = np.array(context_words, dtype=NP_DTYPE)
 
     # === 7. Save training data and vocabularies to file ===
     logging.info('Saving data to file')
@@ -154,6 +160,7 @@ def run_pipeline(unused_argv):
     out_dir = Path(FLAGS.training_data_dir).expanduser() / 'training_data' / \
         DATASET_NAME_PATTERN.format(
             dataset_name=FLAGS.dataset_name,
+            architecture=FLAGS.architecture,
             window_size=FLAGS.window_size,
             vocab_size=FLAGS.vocab_size
         )
@@ -161,8 +168,9 @@ def run_pipeline(unused_argv):
 
     # Save training examples to NPY
     np.save(out_dir / 'doc_ids', doc_ids)
-    np.save(out_dir / 'context_words', context_words)
     np.save(out_dir / 'target_words', target_words)
+    if FLAGS.architecture == 'pvdm':
+        np.save(out_dir / 'context_words', context_words)
 
     # Save vocabs
     with open(out_dir / 'word_vocab.txt', 'w') as f:

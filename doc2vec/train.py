@@ -18,12 +18,14 @@ import tensorflow as tf
 import wandb
 
 from doc2vec.generate_training_data import DATASET_NAME_PATTERN
-from doc2vec.models import PVDM
+from doc2vec.models import PVDM, DBOW
 
 FLAGS = flags.FLAGS
 flags.DEFINE_integer('batch_size', 128, help='Batch size')
 flags.DEFINE_integer('training_epochs', 10, help='Num epochs to train')
 flags.DEFINE_integer('embedding_size', 128, help='Embedding size')
+flags.DEFINE_enum('architecture', 'dbow', ['pvdm', 'dbow'],
+                  help='The model variant to select.')
 flags.DEFINE_enum('context_mode', 'average', ['concat', 'average'],
                   help='How to combine context embeddings in the PV-DM model. '
                        'They can either be concatenated (large and slow), or averaged.')
@@ -33,10 +35,9 @@ flags.DEFINE_enum('optimizer', 'adam', ['sgd', 'adam'],
 flags.DEFINE_float('momentum', 0.9, help='Rate at which to decay LR')
 flags.DEFINE_integer('log_every', 100, help='How often to log results')
 flags.DEFINE_string('model_dir', None, help='Base directory to store models in')
-flags.DEFINE_string('model_name', 'doc2vec_pvdm', help='Name to identify model')
 flags.DEFINE_bool('wandb', True,
                   help='Whether to track experiment using W&B')
-flags.DEFINE_string('wandb_project', 'doc2vec-pvdm',
+flags.DEFINE_string('wandb_project', 'doc2vec',
                     help='W&B project name to track experiment under')
 flags.DEFINE_integer('random_seed', 1234, help='Seed used to shuffle input data and initialise model')
 
@@ -47,7 +48,7 @@ flags.register_validator(
 )
 
 LOG_FMT_STRING = 'Epoch {epoch} | Batch {batch} | Accuracy {accuracy:.1%} | Loss {loss:.2f}'
-MODEL_NAME_PATTERN = '{model_name}_{dataset_name}_{window_size}window_{vocab_size}vocab_' \
+MODEL_NAME_PATTERN = 'doc2vec_{dataset_name}_{architecture}_{window_size}window_{vocab_size}vocab_' \
                      '{embedding_size}embeddingdim_{context_mode}context_model_{batch_size}batch_{optimizer}optim_' \
                      '{learning_rate}lr_{momentum}momentum_{training_epochs}epochs'
 
@@ -56,17 +57,23 @@ def _load_dataset_and_vocabs_from_file() -> Tuple[tf.data.Dataset, List[str], Li
     data_dir = Path(FLAGS.training_data_dir).expanduser() / 'training_data' / \
         DATASET_NAME_PATTERN.format(
             dataset_name=FLAGS.dataset_name,
+            architecture=FLAGS.architecture,
             window_size=FLAGS.window_size,
             vocab_size=FLAGS.vocab_size
         )
 
     doc_ids = np.load(data_dir / 'doc_ids.npy')
-    context_words = np.load(data_dir / 'context_words.npy')
     target_words = np.load(data_dir / 'target_words.npy')
-
-    ds = tf.data.Dataset.from_tensor_slices(
-        (doc_ids, context_words, target_words)
-    )
+    if FLAGS.architecture == 'pvdm':
+        context_words = np.load(data_dir / 'context_words.npy')
+        ds = tf.data.Dataset.from_tensor_slices(
+            (doc_ids, context_words, target_words)
+        )
+    else:
+        # DBOW: insert empty dimension to represent extraneous context_words
+        ds = tf.data.Dataset.from_tensor_slices(
+            (doc_ids, None, target_words)
+        )
 
     with open(data_dir / 'word_vocab.txt') as f:
         word_vocab = f.read().split('\n')
@@ -143,19 +150,28 @@ def main(_):
 
         return new_model_params, opt_state
 
-    def model_fn(doc_id, context_words):
-        pvdm = PVDM(
-            word_vocab_size=len(word_vocab),
-            doc_vocab_size=len(doc_vocab),
-            embedding_size=FLAGS.embedding_size,
-            window_size=FLAGS.window_size,
-            context_mode=FLAGS.context_mode,
-            name=FLAGS.model_name
-        )
-        return pvdm(doc_id, context_words)
+    def model_fn(doc_id, context_words=None):
+        if FLAGS.architecture == 'pvdm':
+            d2v = PVDM(
+                word_vocab_size=len(word_vocab),
+                doc_vocab_size=len(doc_vocab),
+                embedding_size=FLAGS.embedding_size,
+                window_size=FLAGS.window_size,
+                context_mode=FLAGS.context_mode,
+                name=FLAGS.architecture_name
+            )
+        else:
+            d2v = DBOW(
+                word_vocab_size=len(word_vocab),
+                doc_vocab_size=len(doc_vocab),
+                embedding_size=FLAGS.embedding_size,
+                name=FLAGS.architecture_name
+            )
+
+        return d2v(doc_id, context_words)
 
     model_name = MODEL_NAME_PATTERN.format(
-        model_name=FLAGS.model_name,
+        model=FLAGS.architecture,
         dataset_name=FLAGS.dataset_name,
         window_size=FLAGS.window_size,
         vocab_size=FLAGS.vocab_size,
@@ -167,7 +183,7 @@ def main(_):
         momentum=FLAGS.momentum,
         training_epochs=FLAGS.training_epochs
     )
-    model_save_dir = Path(FLAGS.model_dir).expanduser() / model_name
+    model_save_dir = Path(FLAGS.architecture_dir).expanduser() / model_name
 
     if FLAGS.wandb:
         wandb.init(project=FLAGS.wandb_project)
@@ -230,7 +246,7 @@ def main(_):
         _get_similar_terms(
             comparison_terms,
             word_vocab,
-            model_params[FLAGS.model_name + '/~/word_embeddings']
+            model_params[FLAGS.architecture_name + '/~/word_embeddings']
         )
 
         training_iter = training_data.as_numpy_iterator()

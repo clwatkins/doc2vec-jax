@@ -6,7 +6,7 @@ import jax.numpy as jnp
 
 
 class PVDM(hk.Module):
-    """Implements a PV-DM Doc2Vec model."""
+    """Implements a PV-DM (paragraph vector-distributed memory) Doc2Vec model."""
 
     def __init__(self, word_vocab_size: int, doc_vocab_size: int,
                  embedding_size: int, window_size: int, context_mode: str, name: str):
@@ -41,5 +41,25 @@ class PVDM(hk.Module):
             raise ValueError('context_mode must be set to either `concat` or `average`')
 
         logits = self.fc(flattened)
+
+        return jax.nn.softmax(logits)
+
+
+class DBOW(hk.Module):
+    """Implements a DBOW (distributed bag of words) Doc2Vec model."""
+
+    def __init__(self, doc_vocab_size: int, word_vocab_size: int, embedding_size: int, name: str):
+        super().__init__(name=name)
+        self.doc_embedder = hk.Embed(
+            vocab_size=doc_vocab_size,
+            embed_dim=embedding_size, name='doc_embeddings')
+        self.fc = hk.Linear(
+            output_size=word_vocab_size, name='fully_connected')
+
+        self.embedding_size = embedding_size
+
+    def __call__(self, doc_id, _):
+        doc_embedding = self.doc_embedder(doc_id)
+        logits = self.fc(doc_embedding)
 
         return jax.nn.softmax(logits)
