@@ -27,6 +27,7 @@ class Vocabulary:
         self.vocab = {unk_token: 0}
         self.max_size = max_size
         self.counter = None
+        self.total_words = 0
 
     def __getitem__(self, token: str) -> int:
         if not self.max_size:
@@ -51,7 +52,8 @@ class Vocabulary:
             raise ValueError('max_size must be set before calling .fit().')
 
         self.counter = collections.Counter(words)
-        for word, _ in self.counter.most_common(self.max_size):
+        for word, word_freq in self.counter.most_common(self.max_size):
             self.vocab[word] = len(self.vocab) + 1
+            self.total_words += word_freq
 
         return self.vocab

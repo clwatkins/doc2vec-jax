@@ -40,9 +40,7 @@ class PVDM(hk.Module):
         else:
             raise ValueError('context_mode must be set to either `concat` or `average`')
 
-        logits = self.fc(flattened)
-
-        return jax.nn.softmax(logits)
+        return self.fc(flattened)  # return logits
 
 
 class DBOW(hk.Module):
@@ -60,6 +58,4 @@ class DBOW(hk.Module):
 
     def __call__(self, doc_id, _):
         doc_embedding = self.doc_embedder(doc_id)
-        logits = self.fc(doc_embedding)
-
-        return jax.nn.softmax(logits)
+        return self.fc(doc_embedding)  # return logits

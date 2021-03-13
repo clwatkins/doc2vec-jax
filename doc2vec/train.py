@@ -37,7 +37,6 @@ flags.DEFINE_bool('wandb', True,
                   help='Whether to track experiment using W&B')
 flags.DEFINE_string('wandb_project', 'doc2vec',
                     help='W&B project name to track experiment under')
-flags.DEFINE_integer('random_seed', 1234, help='Seed used to shuffle input data and initialise model')
 
 flags.register_validator(
     flag_name='model_dir',
@@ -47,7 +46,8 @@ flags.register_validator(
 
 LOG_FMT_STRING = 'Epoch {epoch} | Batch {batch} | Accuracy {accuracy:.1%} | Loss {loss:.2f}'
 MODEL_NAME_PATTERN = 'doc2vec_{dataset_name}_{architecture}_{window_size}window_{vocab_size}vocab_' \
-                     '{embedding_size}embeddingdim_{context_mode}context_model_{batch_size}batch_{optimizer}optim_' \
+                     '{ns_ratio}ns_ratio_{subsampling_thresh}subsampling_thresh_{embedding_size}' \
+                     'embeddingdim_{context_mode}context_{batch_size}batch_{optimizer}optim_' \
                      '{learning_rate}lr_{momentum}momentum_{training_epochs}epochs'
 
 
@@ -57,7 +57,9 @@ def _load_dataset_and_vocabs_from_file() -> Tuple[tf.data.Dataset, List[str], Li
             dataset_name=FLAGS.dataset_name,
             architecture=FLAGS.architecture,
             window_size=FLAGS.window_size,
-            vocab_size=FLAGS.vocab_size
+            vocab_size=FLAGS.vocab_size,
+            subsampling_thresh=FLAGS.subsampling_thresh,
+            ns_ratio=FLAGS.ns_ratio
         )
 
     doc_ids = np.load(data_dir / 'doc_ids.npy')
@@ -115,15 +117,35 @@ def main(_):
     tf.config.set_soft_device_placement(True)
 
     @jax.jit
-    def loss_fn(params: hk.Params, batch: Tuple[np.ndarray, np.ndarray, np.ndarray]) -> float:
-        def categorical_cross_entropy(probs, targets):
-            return -jnp.sum(targets * jnp.log(probs), axis=1)
+    def loss_fn(params: hk.Params,
+                batch: Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]) -> float:
+        def negative_sampling_loss(logits, targets, labels):
+            pos_idxs = jnp.where(labels == 1)
+            neg_idxs = jnp.where(labels == 0)
 
-        doc, context, target = batch
-        probs = model.apply(params, doc, context)
+            pos_loss = -jnp.sum(
+                jnp.log(jax.nn.sigmoid(logits[:, pos_idxs].T @ targets[:, pos_idxs])),
+                axis=1
+            )
+            if not FLAGS.num_ns:
+                return pos_loss
+            else:
+                neg_loss = jnp.sum(
+                    jnp.log(jax.nn.sigmoid(-1 * logits[:, neg_idxs].T @ targets[:, neg_idxs])),
+                    axis=1
+                ) / FLAGS.num_ns
+                return pos_loss + neg_loss
+
+        doc, context, target, label = batch
+        logits = model.apply(params, doc, context)
+
         target_one_hot = jax.nn.one_hot(
             target, num_classes=len(word_vocab), dtype=jnp.uint32)
-        loss = jnp.mean(categorical_cross_entropy(probs, target_one_hot))
+
+        loss = jnp.mean(negative_sampling_loss(
+            logits, target_one_hot, label)
+        )
+
         return loss
 
     @jax.jit
@@ -174,7 +196,9 @@ def main(_):
         optimizer=FLAGS.optimizer,
         learning_rate=FLAGS.learning_rate,
         momentum=FLAGS.momentum,
-        training_epochs=FLAGS.training_epochs
+        training_epochs=FLAGS.training_epochs,
+        subsampling_thresh=FLAGS.subsampling_thresh,
+        ns_ratio=FLAGS.ns_ratio
     )
     model_save_dir = Path(FLAGS.model_dir).expanduser() / model_name
 
