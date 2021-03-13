@@ -24,8 +24,6 @@ FLAGS = flags.FLAGS
 flags.DEFINE_integer('batch_size', 128, help='Batch size')
 flags.DEFINE_integer('training_epochs', 10, help='Num epochs to train')
 flags.DEFINE_integer('embedding_size', 128, help='Embedding size')
-flags.DEFINE_enum('architecture', 'dbow', ['pvdm', 'dbow'],
-                  help='The model variant to select.')
 flags.DEFINE_enum('context_mode', 'average', ['concat', 'average'],
                   help='How to combine context embeddings in the PV-DM model. '
                        'They can either be concatenated (large and slow), or averaged.')
@@ -64,16 +62,11 @@ def _load_dataset_and_vocabs_from_file() -> Tuple[tf.data.Dataset, List[str], Li
 
     doc_ids = np.load(data_dir / 'doc_ids.npy')
     target_words = np.load(data_dir / 'target_words.npy')
-    if FLAGS.architecture == 'pvdm':
-        context_words = np.load(data_dir / 'context_words.npy')
-        ds = tf.data.Dataset.from_tensor_slices(
-            (doc_ids, context_words, target_words)
-        )
-    else:
-        # DBOW: insert empty dimension to represent extraneous context_words
-        ds = tf.data.Dataset.from_tensor_slices(
-            (doc_ids, None, target_words)
-        )
+    context_words = np.load(data_dir / 'context_words.npy')
+
+    ds = tf.data.Dataset.from_tensor_slices(
+        (doc_ids, context_words, target_words)
+    )
 
     with open(data_dir / 'word_vocab.txt') as f:
         word_vocab = f.read().split('\n')
@@ -158,20 +151,20 @@ def main(_):
                 embedding_size=FLAGS.embedding_size,
                 window_size=FLAGS.window_size,
                 context_mode=FLAGS.context_mode,
-                name=FLAGS.architecture_name
+                name=FLAGS.architecture
             )
         else:
             d2v = DBOW(
                 word_vocab_size=len(word_vocab),
                 doc_vocab_size=len(doc_vocab),
                 embedding_size=FLAGS.embedding_size,
-                name=FLAGS.architecture_name
+                name=FLAGS.architecture
             )
 
         return d2v(doc_id, context_words)
 
     model_name = MODEL_NAME_PATTERN.format(
-        model=FLAGS.architecture,
+        architecture=FLAGS.architecture,
         dataset_name=FLAGS.dataset_name,
         window_size=FLAGS.window_size,
         vocab_size=FLAGS.vocab_size,
@@ -183,7 +176,7 @@ def main(_):
         momentum=FLAGS.momentum,
         training_epochs=FLAGS.training_epochs
     )
-    model_save_dir = Path(FLAGS.architecture_dir).expanduser() / model_name
+    model_save_dir = Path(FLAGS.model_dir).expanduser() / model_name
 
     if FLAGS.wandb:
         wandb.init(project=FLAGS.wandb_project)
@@ -243,11 +236,12 @@ def main(_):
         _save_model_to(jax.device_get(model_params), model_save_dir)
 
         # Print similar terms
-        _get_similar_terms(
-            comparison_terms,
-            word_vocab,
-            model_params[FLAGS.architecture_name + '/~/word_embeddings']
-        )
+        if FLAGS.architecture == 'pvdm':
+            _get_similar_terms(
+                comparison_terms,
+                word_vocab,
+                model_params[FLAGS.architecture + '/~/word_embeddings']
+            )
 
         training_iter = training_data.as_numpy_iterator()
 

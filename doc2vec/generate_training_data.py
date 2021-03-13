@@ -18,6 +18,8 @@ import numpy as np
 from doc2vec.text_helpers import flatten_nested_text, Vocabulary
 
 FLAGS = flags.FLAGS
+flags.DEFINE_enum('architecture', 'dbow', ['pvdm', 'dbow'],
+                  help='The model variant to select.')
 flags.DEFINE_integer('vocab_size', default=50_000, help='Vocab size')
 flags.DEFINE_integer('window_size', default=5, help='Window size')
 flags.DEFINE_string('training_data_dir', default=None,
@@ -69,7 +71,7 @@ def _build_training_examples(text: List[int], doc_id: int, window_size: int) -> 
             context_words = np.array(text[w_idx:w_idx + window_size], dtype=NP_DTYPE)
         else:
             # DBOW doesn't require context words -- use a placerholder so the data struct can stay consistent
-            context_words = None
+            context_words = np.array([], dtype=NP_DTYPE)
 
         examples.append((
             doc_id,
@@ -169,8 +171,7 @@ def run_pipeline(unused_argv):
     # Save training examples to NPY
     np.save(out_dir / 'doc_ids', doc_ids)
     np.save(out_dir / 'target_words', target_words)
-    if FLAGS.architecture == 'pvdm':
-        np.save(out_dir / 'context_words', context_words)
+    np.save(out_dir / 'context_words', context_words)
 
     # Save vocabs
     with open(out_dir / 'word_vocab.txt', 'w') as f:

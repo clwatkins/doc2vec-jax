@@ -269,6 +269,26 @@ flatbuffers = "*"
 numpy = ">=1.16"
 scipy = "*"
 
+[package.source]
+type = "url"
+url = "https://files.pythonhosted.org/packages/82/62/d4befd9e93bfc54ec6631accc1c802877e7c3022e9e2e4360abacbc1f4bf/jaxlib-0.1.62-cp38-none-macosx_10_9_x86_64.whl"
+[[package]]
+name = "jaxlib"
+version = "0.1.62+cuda110"
+description = "XLA library for JAX"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+absl-py = "*"
+flatbuffers = "*"
+numpy = ">=1.16"
+scipy = "*"
+
+[package.source]
+type = "url"
+url = "https://storage.googleapis.com/jax-releases/cuda110/jaxlib-0.1.62+cuda110-cp38-none-manylinux2010_x86_64.whl"
 [[package]]
 name = "keras-preprocessing"
 version = "1.1.2"
@@ -731,7 +751,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "6239d2d901db1bfee7b5a1e3cd65c6b933d7ac3f21a02df5f3aea76b24aecc1b"
+content-hash = "2fb51e723043e70213bbd0aa7a73b9f7450e6b942d1cead85c419683dc4cdcf3"
 
 [metadata.files]
 absl-py = [
@@ -897,16 +917,7 @@ idna = [
 jax = [
     {file = "jax-0.2.10.tar.gz", hash = "sha256:c863680596aa369b3f8a4b5f668e3fd66cb541c4130e2a1511a37cc2552d360b"},
 ]
-jaxlib = [
-    {file = "jaxlib-0.1.62-cp36-none-macosx_10_9_x86_64.whl", hash = "sha256:9b58be444ef3147913e4117ab34eae80a41a785291380b113ab6a179157de222"},
-    {file = "jaxlib-0.1.62-cp36-none-manylinux2010_x86_64.whl", hash = "sha256:8ae71b54b86f140a840b8c097b015e6fde5c323cc7b2ea716b2707a66370b01e"},
-    {file = "jaxlib-0.1.62-cp37-none-macosx_10_9_x86_64.whl", hash = "sha256:58cf9a47e346ca63a3bb6d7ce6b15531fa9ae9bd720cdf99223acb397e1ac26f"},
-    {file = "jaxlib-0.1.62-cp37-none-manylinux2010_x86_64.whl", hash = "sha256:71202f39a02e7286a5371b75fd58f0131514481dc230a0635447f8470359d92c"},
-    {file = "jaxlib-0.1.62-cp38-none-macosx_10_9_x86_64.whl", hash = "sha256:7e7652ce36a23ca2707cf1818db8761583e64238ca29592f630d620d58f973c4"},
-    {file = "jaxlib-0.1.62-cp38-none-manylinux2010_x86_64.whl", hash = "sha256:5a615327a4e97b99090bfdf3b24053f9ca8439a3b22d6455450589b7c5e8f95d"},
-    {file = "jaxlib-0.1.62-cp39-none-macosx_10_9_x86_64.whl", hash = "sha256:42d6aff8a7262da6f69b55ecf64847ec741b164e179168f5be6008c23c956edf"},
-    {file = "jaxlib-0.1.62-cp39-none-manylinux2010_x86_64.whl", hash = "sha256:bb878ea37bacd121ac183144998a466aa119859930b787393ea74f7034e0660b"},
-]
+jaxlib = []
 keras-preprocessing = [
     {file = "Keras_Preprocessing-1.1.2-py2.py3-none-any.whl", hash = "sha256:7b82029b130ff61cc99b55f3bd27427df4838576838c5b2f65940e4fcec99a7b"},
     {file = "Keras_Preprocessing-1.1.2.tar.gz", hash = "sha256:add82567c50c8bc648c14195bf544a5ce7c1f76761536956c3d2978970179ef3"},

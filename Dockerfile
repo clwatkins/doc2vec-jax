@@ -22,8 +22,9 @@ RUN pyenv global 3.8.7
 
 RUN pip install poetry
 
-COPY ./doc2vec doc2vec-jax/doc2vec/
 COPY poetry.lock pyproject.toml doc2vec-jax/
-
 WORKDIR doc2vec-jax/
+
 RUN poetry install
+
+COPY ./doc2vec ./doc2vec/

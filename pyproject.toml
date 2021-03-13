@@ -1,14 +1,18 @@
 [tool.poetry]
-name = "doc2vec"
+name = "doc2vec-jax"
 version = "0.1.0"
-description = ""
+description = "Implementation of the Doc2Vec sentence vectorisation algorithm in JAX."
 authors = ["Chris Watkins <chris.watkins93@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
 absl-py = "^0.11.0"
-jax = "^0.2.9"
-jaxlib = "^0.1.59"
+jax = "0.2.10"
+jaxlib = [
+    # Install accelerated jaxlib if on linux (assuming CUDA 11.0 available)
+    { platform = "linux", url = "https://storage.googleapis.com/jax-releases/cuda110/jaxlib-0.1.62+cuda110-cp38-none-manylinux2010_x86_64.whl"},
+    { platform = "darwin", url = "https://files.pythonhosted.org/packages/82/62/d4befd9e93bfc54ec6631accc1c802877e7c3022e9e2e4360abacbc1f4bf/jaxlib-0.1.62-cp38-none-macosx_10_9_x86_64.whl"},
+]
 dm-haiku = {git = "https://github.com/deepmind/dm-haiku"}
 optax = "^0.0.2"
 wandb = "^0.10.17"
