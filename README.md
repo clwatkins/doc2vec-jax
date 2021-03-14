@@ -26,7 +26,7 @@ Pre-requisite: ensure [nvidia-docker](https://github.com/NVIDIA/nvidia-docker) i
 
 ```shell
 $ sudo docker build -t doc2vec-jax .
-$ sudo docker run --gpus all -it -v ~/doc2vec:~/doc2vec doc2vec-jax:latest /bin/bash
+$ sudo docker run --gpus all -it -v ~/doc2vec:/doc2vec doc2vec-jax:latest /bin/bash
 $ poetry shell
 $ python -m doc2vec.train ...
 ```
