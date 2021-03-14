@@ -239,14 +239,29 @@ def run_pipeline(unused_argv):
         results = pool.starmap(
             _training_example_builder, zipped_docs_and_ids)
 
-    doc_ids, contexts, targets, labels = list(zip(*results))
+    _doc_ids, _contexts, _targets, _labels = list(zip(*results))
 
     del zipped_docs_and_ids
+    del results
 
-    doc_ids = np.array(flatten_nested(doc_ids), dtype=NP_DTYPE)
-    target_words = np.array(flatten_nested(targets), dtype=NP_DTYPE)
-    context_words = np.array(flatten_nested(contexts), dtype=NP_DTYPE)
-    labels = np.array(flatten_nested(labels), dtype=NP_DTYPE)
+    doc_ids = []
+    contexts = []
+    targets = []
+    labels = []
+
+    for chunk in _doc_ids:
+        doc_ids.extend(chunk)
+    for chunk in _contexts:
+        contexts.extend(chunk)
+    for chunk in _targets:
+        targets.extend(chunk)
+    for chunk in _labels:
+        labels.extend(chunk)
+
+    doc_ids = np.array(doc_ids, dtype=NP_DTYPE)
+    target_words = np.array(targets, dtype=NP_DTYPE)
+    context_words = np.array(contexts, dtype=NP_DTYPE)
+    labels = np.array(labels, dtype=NP_DTYPE)
 
     # === 7. Save training data and vocabularies to file ===
     logging.info('Saving data to file')

@@ -3,7 +3,7 @@
 ## Download training data
 
 ```bash
-mkdir $HOME/doc2vec/data/
+mkdir /doc2vec/data/
 curl https://ai.stanford.edu/~amaas/data/sentiment/aclImdb_v1.tar.gz --output /doc2vec/data/aclImdb.tar.gz
 tar -xf /doc2vec/data/aclImdb.tar.gz -C /doc2vec/data
 ```
@@ -27,9 +27,9 @@ python -m doc2vec.generate_training_data \
 mkdir /doc2vec/models/
 export XLA_PYTHON_CLIENT_PREALLOCATE=false
 python -m doc2vec.train \
---training_data_dir $HOME/doc2vec/data/aclImdb/train/unsup \
+--training_data_dir /doc2vec/data/aclImdb/train/unsup \
 --dataset_name imdb_unsup \
---model_dir $HOME/doc2vec/models \
+--model_dir /doc2vec/models \
 --architecture pvdm \
 --context_mode average \
 --window_size 5 \
