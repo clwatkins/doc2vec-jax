@@ -21,14 +21,20 @@ The paper proposes 2 main model variants -- Paragraph Vector-Distributed Memory 
 ## Installation
 
 ### Via Docker
-- Ensure [nvidia-docker](https://github.com/NVIDIA/nvidia-docker) is installed
-- `sudo docker build -t doc2vec-jax .`
-- `sudo docker run --gpus all -it doc2vec-jax:latest /bin/bash`
-- `poetry shell`
-- `python -m doc2vec.train ...`
+
+Pre-requisite: ensure [nvidia-docker](https://github.com/NVIDIA/nvidia-docker) is installed
+
+```shell
+$ sudo docker build -t doc2vec-jax .
+$ sudo docker run --gpus all -it -v ~/doc2vec:~/doc2vec doc2vec-jax:latest /bin/bash
+$ poetry shell
+$ python -m doc2vec.train ...
+```
 
 ## TODO
 
+- [x] `PVDM` model variant
 - [x] `DBOW` model variant
 - [x] Negative sampling
+- [x] Sub-sampling
 - [ ] Parallelise training data generation
