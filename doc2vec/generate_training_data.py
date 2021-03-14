@@ -8,14 +8,16 @@ from absl import app
 from absl import flags
 from absl import logging
 
+import functools
 import hashlib
+import multiprocessing
+import numpy as np
 from pathlib import Path
 import re
 from typing import List, Tuple, Optional, Sequence
 from tqdm import tqdm
-import numpy as np
 
-from doc2vec.text_helpers import flatten_nested_text, Vocabulary
+from doc2vec.text_helpers import flatten_nested, Vocabulary
 
 FLAGS = flags.FLAGS
 flags.DEFINE_enum('architecture', 'dbow', ['pvdm', 'dbow'],
@@ -178,7 +180,7 @@ def run_pipeline(unused_argv):
     logging.info('Building vocabularies...')
 
     word_vocab = Vocabulary(max_size=FLAGS.vocab_size)
-    word_vocab.fit(flatten_nested_text(clean_documents))
+    word_vocab.fit(flatten_nested(clean_documents))
 
     doc_vocab = Vocabulary()  # no max size - this will give iterative idxs
 
@@ -225,23 +227,26 @@ def run_pipeline(unused_argv):
     else:
         subsampling_discard_probs = None
 
-    doc_ids, contexts, targets, labels = [], [], [], []
+    _training_example_builder = functools.partial(
+        _build_training_examples,
+        window_size=FLAGS.window_size,
+        word_vocab=word_vocab,
+        ns_sampling_table=ns_sampling_probs,
+        subsampling_discard_probs=subsampling_discard_probs
+    )
 
-    for doc, doc_id in tqdm(zipped_docs_and_ids, total=len(encoded_documents)):
-        _doc_ids, _contexts, _targets, _labels = _build_training_examples(
-            doc, doc_id, FLAGS.window_size, word_vocab, ns_sampling_probs, subsampling_discard_probs)
+    with multiprocessing.Pool() as pool:
+        results = pool.starmap(
+            _training_example_builder, zipped_docs_and_ids)
 
-        doc_ids.extend(_doc_ids)
-        contexts.extend(_contexts)
-        targets.extend(_targets)
-        labels.extend(_labels)
+    doc_ids, contexts, targets, labels = list(zip(*results))
 
     del zipped_docs_and_ids
 
-    doc_ids = np.array(doc_ids, dtype=NP_DTYPE)
-    target_words = np.array(targets, dtype=NP_DTYPE)
-    context_words = np.array(contexts, dtype=NP_DTYPE)
-    labels = np.array(labels, dtype=NP_DTYPE)
+    doc_ids = np.array(flatten_nested(doc_ids), dtype=NP_DTYPE)
+    target_words = np.array(flatten_nested(targets), dtype=NP_DTYPE)
+    context_words = np.array(flatten_nested(contexts), dtype=NP_DTYPE)
+    labels = np.array(flatten_nested(labels), dtype=NP_DTYPE)
 
     # === 7. Save training data and vocabularies to file ===
     logging.info('Saving data to file')

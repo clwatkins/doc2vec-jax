@@ -4,7 +4,7 @@ import itertools
 from typing import Collection, Dict, List, Optional
 
 
-def flatten_nested_text(nested_text: List[List[str]]) -> List[str]:
+def flatten_nested(nested_text: List[List[str]]) -> List[str]:
     return list(itertools.chain.from_iterable(nested_text))
 
 

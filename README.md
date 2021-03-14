@@ -37,4 +37,4 @@ $ python -m doc2vec.train ...
 - [x] `DBOW` model variant
 - [x] Negative sampling
 - [x] Sub-sampling
-- [ ] Parallelise training data generation
+- [x] Parallelise training data generation
