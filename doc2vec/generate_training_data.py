@@ -111,7 +111,8 @@ def _build_training_examples(text: Sequence[int], doc_id: int,
             context_words = text[w_idx:w_idx + window_size]
         else:
             # DBOW doesn't require context words -- use a placerholder so the data struct can stay consistent
-            context_words = []
+            # Because we eventually cast to a np.uint, this will end up being written out as the max value of the type
+            context_words = [-1]
 
         # === Negative labels ===
         # For each positive example (of a true target_word) draw

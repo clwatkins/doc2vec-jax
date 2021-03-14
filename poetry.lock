@@ -378,14 +378,6 @@ optional = false
 python-versions = "*"
 
 [[package]]
-name = "pprofile"
-version = "2.0.5"
-description = "Line-granularity, thread-aware deterministic and statistic pure-python profiler"
-category = "main"
-optional = false
-python-versions = "*"
-
-[[package]]
 name = "promise"
 version = "2.3"
 description = "Promises/A+ implementation for Python"
@@ -773,7 +765,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "b5f642f7dcf27e4c9a685569816b4d8b647d10f98072052c855da5386cd6871b"
+content-hash = "ff9867da20bf32a1e667cd5245250e60122aa7243df1355ed2418e9a9422ea08"
 
 [metadata.files]
 absl-py = [
@@ -998,9 +990,6 @@ optax = [
 ]
 pathtools = [
     {file = "pathtools-0.1.2.tar.gz", hash = "sha256:7c35c5421a39bb82e58018febd90e3b6e5db34c5443aaaf742b3f33d4655f1c0"},
-]
-pprofile = [
-    {file = "pprofile-2.0.5.tar.gz", hash = "sha256:c2787af57c44c48e6c7e518d522fd0f93983892bfaae74ed340da02ed500ec5f"},
 ]
 promise = [
     {file = "promise-2.3.tar.gz", hash = "sha256:dfd18337c523ba4b6a58801c164c1904a9d4d1b1747c7d5dbf45b693a49d93d0"},

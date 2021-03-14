@@ -41,4 +41,6 @@ python -m doc2vec.train \
 ```
 
 Note we disable XLA memory pre-allocation, as that has a tendency to cause issues -- suspect because of its interaction 
-with the Tensorflow data loader also reserving GPU memory. See: https://jax.readthedocs.io/en/latest/gpu_memory_allocation.html 
+with the Tensorflow data loader also reserving GPU memory. See: https://jax.readthedocs.io/en/latest/gpu_memory_allocation.html.
+
+If you want to disable the GPU entirely, try: `export JAX_PLATFORM_NAME=cpu`

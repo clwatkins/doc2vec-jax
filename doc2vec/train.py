@@ -65,9 +65,10 @@ def _load_dataset_and_vocabs_from_file() -> Tuple[tf.data.Dataset, List[str], Li
     doc_ids = np.load(data_dir / 'doc_ids.npy')
     target_words = np.load(data_dir / 'target_words.npy')
     context_words = np.load(data_dir / 'context_words.npy')
+    labels = np.load(data_dir / 'labels.npy')
 
     ds = tf.data.Dataset.from_tensor_slices(
-        (doc_ids, context_words, target_words)
+        (doc_ids, context_words, target_words, labels)
     )
 
     with open(data_dir / 'word_vocab.txt') as f:
@@ -85,7 +86,7 @@ def _save_model_to(model_params: Any, directory: Path):
     with open(directory / 'model.p', "wb") as f:
         pickle.dump(model_params, f, protocol=pickle.DEFAULT_PROTOCOL)
 
-
+@jax.jit
 def _get_similar_terms(comparison_terms: List[str],
                        vocab: List[str],
                        embedding_layer: hk.Embed,
@@ -116,46 +117,41 @@ def main(_):
     tf.debugging.set_log_device_placement(True)
     tf.config.set_soft_device_placement(True)
 
-    @jax.jit
-    def loss_fn(params: hk.Params,
-                batch: Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]) -> float:
-        def negative_sampling_loss(logits, targets, labels):
-            pos_idxs = jnp.where(labels == 1)
-            neg_idxs = jnp.where(labels == 0)
+    def predict(params: hk.Params,
+                sample: Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]) -> float:
 
-            pos_loss = -jnp.sum(
-                jnp.log(jax.nn.sigmoid(logits[:, pos_idxs].T @ targets[:, pos_idxs])),
-                axis=1
-            )
-            if not FLAGS.num_ns:
-                return pos_loss
-            else:
-                neg_loss = jnp.sum(
-                    jnp.log(jax.nn.sigmoid(-1 * logits[:, neg_idxs].T @ targets[:, neg_idxs])),
-                    axis=1
-                ) / FLAGS.num_ns
-                return pos_loss + neg_loss
+        def negative_sampling_loss(logits, target_one_hot, label):
+            pos_loss = jnp.log(jax.nn.sigmoid(
+                (logits * label) @ (target_one_hot * label).T
+            ))
+            neg_loss = jnp.log(jax.nn.sigmoid(
+                -1 * ((logits * (1 - label)) @ (target_one_hot * (1- label)).T)  # invert labels mask to preserve negatives
+            ))
+            return pos_loss + neg_loss
 
-        doc, context, target, label = batch
+        doc, context, target, label = sample
         logits = model.apply(params, doc, context)
 
         target_one_hot = jax.nn.one_hot(
             target, num_classes=len(word_vocab), dtype=jnp.uint32)
 
-        loss = jnp.mean(negative_sampling_loss(
-            logits, target_one_hot, label)
-        )
+        ns_loss = negative_sampling_loss(logits, target_one_hot, label)
 
-        return loss
+        return jnp.mean(ns_loss)
 
     @jax.jit
-    def calc_accuracy(params: hk.Params, batch: Tuple[np.ndarray, np.ndarray, np.ndarray]) -> float:
-        doc, context, target = batch
+    def calc_accuracy(params: hk.Params, sample: Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]) -> float:
+        doc, context, target, labels = sample
         probs = model.apply(params, doc, context)
 
+        # TODO: figure out labels
         predicted_class = jnp.argmax(probs, axis=-1)
 
         return jnp.mean(predicted_class == target)
+
+    def loss_fn(params, batch):
+        losses = batched_predict(params, batch)
+        return -jnp.mean(losses)
 
     @jax.jit
     def update(model_params: hk.Params, opt_state, batch):
@@ -230,7 +226,10 @@ def main(_):
     else:
         raise AssertionError('Expected optimizer `sgd` or `adam`')
 
-    init_doc, init_context, _ = next(training_iter)
+    batched_predict = jax.vmap(predict, in_axes=(None, 0))
+    batched_calc_accuracy = jax.vmap(calc_accuracy, in_axes=(None, 0))
+
+    init_doc, init_context, _, _ = next(training_iter)
     model_params = model.init(jax.random.PRNGKey(FLAGS.random_seed), init_doc, init_context)
     opt_state = optimizer.init(model_params)
 
@@ -240,8 +239,8 @@ def main(_):
             model_params, opt_state = update(model_params, opt_state, batch)
 
             if not b % FLAGS.log_every:
-                accuracy = calc_accuracy(model_params, batch)
-                loss = loss_fn(model_params, batch)
+                accuracy = jnp.mean(batched_calc_accuracy(model_params, batch))
+                loss = jnp.mean(batched_predict(model_params, batch))
                 accuracy, loss = jax.device_get(accuracy), jax.device_get(loss)
 
                 logging.info(LOG_FMT_STRING.format(
