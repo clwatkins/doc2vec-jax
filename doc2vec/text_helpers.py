@@ -32,7 +32,7 @@ class Vocabulary:
     def __getitem__(self, token: str) -> int:
         if not self.max_size:
             if token not in self.vocab:
-                self.vocab[token] = len(self.vocab) + 1
+                self.vocab[token] = len(self.vocab)
 
             return self.vocab[token]
 
@@ -53,7 +53,7 @@ class Vocabulary:
 
         self.counter = collections.Counter(words)
         for word, word_freq in self.counter.most_common(self.max_size):
-            self.vocab[word] = len(self.vocab) + 1
+            self.vocab[word] = len(self.vocab)
             self.total_words += word_freq
 
         return self.vocab

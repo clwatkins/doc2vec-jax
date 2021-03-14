@@ -289,6 +289,7 @@ scipy = "*"
 [package.source]
 type = "url"
 url = "https://storage.googleapis.com/jax-releases/cuda110/jaxlib-0.1.62+cuda110-cp38-none-manylinux2010_x86_64.whl"
+
 [[package]]
 name = "keras-preprocessing"
 version = "1.1.2"
@@ -372,6 +373,14 @@ numpy = ">=1.18.0"
 name = "pathtools"
 version = "0.1.2"
 description = "File system general utilities"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
+name = "pprofile"
+version = "2.0.5"
+description = "Line-granularity, thread-aware deterministic and statistic pure-python profiler"
 category = "main"
 optional = false
 python-versions = "*"
@@ -676,6 +685,19 @@ optional = false
 python-versions = ">=3.5"
 
 [[package]]
+name = "tqdm"
+version = "4.59.0"
+description = "Fast, Extensible Progress Meter"
+category = "main"
+optional = false
+python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,>=2.7"
+
+[package.extras]
+dev = ["py-make (>=0.1.0)", "twine", "wheel"]
+notebook = ["ipywidgets (>=6)"]
+telegram = ["requests"]
+
+[[package]]
 name = "typing-extensions"
 version = "3.7.4.3"
 description = "Backported and Experimental Type Hints for Python 3.5+"
@@ -751,7 +773,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "2fb51e723043e70213bbd0aa7a73b9f7450e6b942d1cead85c419683dc4cdcf3"
+content-hash = "b5f642f7dcf27e4c9a685569816b4d8b647d10f98072052c855da5386cd6871b"
 
 [metadata.files]
 absl-py = [
@@ -977,6 +999,9 @@ optax = [
 pathtools = [
     {file = "pathtools-0.1.2.tar.gz", hash = "sha256:7c35c5421a39bb82e58018febd90e3b6e5db34c5443aaaf742b3f33d4655f1c0"},
 ]
+pprofile = [
+    {file = "pprofile-2.0.5.tar.gz", hash = "sha256:c2787af57c44c48e6c7e518d522fd0f93983892bfaae74ed340da02ed500ec5f"},
+]
 promise = [
     {file = "promise-2.3.tar.gz", hash = "sha256:dfd18337c523ba4b6a58801c164c1904a9d4d1b1747c7d5dbf45b693a49d93d0"},
 ]
@@ -1182,6 +1207,10 @@ termcolor = [
 toolz = [
     {file = "toolz-0.11.1-py3-none-any.whl", hash = "sha256:1bc473acbf1a1db4e72a1ce587be347450e8f08324908b8a266b486f408f04d5"},
     {file = "toolz-0.11.1.tar.gz", hash = "sha256:c7a47921f07822fe534fb1c01c9931ab335a4390c782bd28c6bcc7c2f71f3fbf"},
+]
+tqdm = [
+    {file = "tqdm-4.59.0-py2.py3-none-any.whl", hash = "sha256:9fdf349068d047d4cfbe24862c425883af1db29bcddf4b0eeb2524f6fbdb23c7"},
+    {file = "tqdm-4.59.0.tar.gz", hash = "sha256:d666ae29164da3e517fcf125e41d4fe96e5bb375cd87ff9763f6b38b5592fe33"},
 ]
 typing-extensions = [
     {file = "typing_extensions-3.7.4.3-py2-none-any.whl", hash = "sha256:dafc7639cde7f1b6e1acc0f457842a83e722ccca8eef5270af2d74792619a89f"},

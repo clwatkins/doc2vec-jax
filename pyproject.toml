@@ -17,6 +17,8 @@ dm-haiku = {git = "https://github.com/deepmind/dm-haiku"}
 optax = "^0.0.2"
 wandb = "^0.10.17"
 tensorflow = "^2.4.1"
+tqdm = "^4.59.0"
+pprofile = "^2.0.5"
 
 [tool.poetry.dev-dependencies]
 pydocstyle = "^5.1.1"

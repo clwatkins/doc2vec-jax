@@ -8,13 +8,11 @@ from absl import app
 from absl import flags
 from absl import logging
 
-import jax
-import jax.numpy as jnp
 import hashlib
 from pathlib import Path
 import re
-from typing import List, Tuple, Optional
-
+from typing import List, Tuple, Optional, Sequence
+from tqdm import tqdm
 import numpy as np
 
 from doc2vec.text_helpers import flatten_nested_text, Vocabulary
@@ -69,25 +67,44 @@ def _encode_text(document: List[str], vocab: Vocabulary) -> List[int]:
     return [vocab[word] for word in document]
 
 
-def _build_training_examples(text: List[int], doc_id: int,
+def _build_training_examples(text: Sequence[int], doc_id: int,
                              window_size: int,
                              word_vocab: Vocabulary,
-                             ns_sampling_table=Optional[np.ndarray],
-                             subsampling_table=Optional[np.ndarray]
+                             ns_sampling_table: Optional[np.ndarray],
+                             subsampling_discard_probs: Optional[np.ndarray]
                              ) -> Tuple[List[int], List[np.ndarray], List[int], List[int]]:
+    """Build Doc2Vec training examples for a given document.
+
+    This function is architecture aware, including context words only for the PV-DM Doc2Vec variant. It optionally
+    will build negative examples from the noise distribution and sub-sample common words -- controlled by the `num_ns`
+    and `subsampling_thresh` params.
+
+    Args:
+        text: document, represented by sequence of integer-encoded words
+        doc_id: unique document identifier, assumed integer-encoded
+        window_size: width of one-sided window that is used to select context words for the PV-DM model
+        word_vocab: word vocabulary
+        ns_sampling_table: Optionally, an array of size (len(word_vocab),) that is used to weigh a word's probability
+        of being selected as a negative sample
+        subsampling_discard_probs: Optionally, an array of size (len(word_vocab),) that represents a word's probability
+        of being discarded as a target word, based on its relative over-representation in the corpus
+
+    Returns:
+        training examples in their constituent parts -- doc ids, context words, target words, and labels
+    """
     doc_ids, contexts, targets, labels = [], [], [], []
-    key = jax.random.PRNGKey(FLAGS.random_seed)
+    vocab_array = np.array(list(word_vocab.vocab.values()))
 
     # Take a sliding window of length `window_size` to RHS of target word.
     for w_idx in range(1, len(text) - window_size):
         # === Positive labels ===
         target_word = text[w_idx - 1]
 
-        key, subkey = jax.random.split(key)
-        if target_word == 0 or (
-                subsampling_table is not None
-                and jax.random.uniform(subkey) <= subsampling_table[target_word]
-        ):
+        # If sub-sampling, sample from the discard probabilities table, choosing whether to skip the target_word
+        # Note that the UNK token (mapped to all words outside of the vocabulary's range) is assigned probability 0
+        # and so will always be discarded
+        if subsampling_discard_probs is not None \
+                and np.random.uniform() < subsampling_discard_probs[target_word]:
             continue
 
         if FLAGS.architecture == 'pvdm':
@@ -98,20 +115,20 @@ def _build_training_examples(text: List[int], doc_id: int,
 
         # === Negative labels ===
         # For each positive example (of a true target_word) draw
-        # num_ns 'noise' words from the underlying vocab distribution
-        if FLAGS.num_ns:
-            noise_words = list(np.random.choice(
-                a=word_vocab.vocab.values(),
+        # ns_ratio 'noise' words from the underlying vocab distribution
+        if FLAGS.ns_ratio:
+            noise_words = np.random.choice(
+                a=vocab_array,
                 p=ns_sampling_table,
-                size=FLAGS.num_ns
-            ))
+                size=FLAGS.ns_ratio
+            ).tolist()
         else:
             noise_words = []
 
-        doc_ids.extend([doc_id]*(1+FLAGS.num_ns))
-        contexts.extend(context_words*(1+FLAGS.num_ns))
+        doc_ids.extend([doc_id]*(1+FLAGS.ns_ratio))
+        contexts.extend(context_words*(1+FLAGS.ns_ratio))
         targets.extend([target_word] + noise_words)
-        labels.extend([1] + [0]*FLAGS.num_ns)
+        labels.extend([1] + [0]*FLAGS.ns_ratio)
 
     return doc_ids, contexts, targets, labels
 
@@ -128,6 +145,9 @@ def run_pipeline(unused_argv):
     6. Prepare training examples
     7. Save results to disk (in .npy format)
     """
+
+    # Set random seed for sampling reproducibility
+    np.random.seed(FLAGS.random_seed)
 
     # === 1. Read all training documents into memory ===
     logging.info('Reading documents from file...')
@@ -175,27 +195,40 @@ def run_pipeline(unused_argv):
 
     zipped_docs_and_ids = zip(encoded_documents, encoded_doc_ids)
 
-    if FLAGS.ns_ratio or FLAGS.subsampling_thresh:
-        word_probs = jnp.array(
-            [word_vocab.counter[word] / word_vocab.total_words for word in word_vocab.vocab.keys()]
-        )
+    # Note that UNK (the first word in the vocab) doesn't have a corresponding Counter entry -- will return 0
+    word_counts = np.array([word_vocab.counter[word] for word in word_vocab.vocab.keys()])
 
     if FLAGS.ns_ratio:
-        ns_sampling_probs = jnp.power(word_probs, 0.75)
-        ns_sampling_probs = ns_sampling_probs / jnp.sum(ns_sampling_probs)
+        # Raise observed word frequencies and total count to the 3/4 power as suggested in the Word2Vec paper (2.2)
+        # https://proceedings.neurips.cc/paper/2013/file/9aa42b31882ec039965f3c4923ce901b-Paper.pdf
+        #
+        # This 'smooths' the distribution. Nice analysis by Chris McCormick:
+        # http://mccormickml.com/2017/01/11/word2vec-tutorial-part-2-negative-sampling/
+        ns_sampling_probs = np.power(word_counts, 0.75) / np.power(word_vocab.total_words, 0.75)
+        ns_sampling_probs = ns_sampling_probs / np.sum(ns_sampling_probs)
     else:
         ns_sampling_probs = None
 
     if FLAGS.subsampling_thresh:
-        subsampling_discard_probs = 1 - jnp.sqrt(FLAGS.subsampling_thresh / word_probs)
+        # In other implementations (like Keras') these probabilities are calculated
+        # assuming a Zipf-like distribution in the underlying data.
+        # Here we compute it empirically based on observed frequency
+        # Rare values can end up with negative discard probs (-inf for 0 probability terms)
+        # So clip to 0. Cf: https://stackoverflow.com/a/58773864
+        word_probs = word_counts / word_vocab.total_words
+
+        # Ignore divide-by-zero as it'll assign -inf and then be clipped
+        with np.errstate(divide='ignore'):
+            subsampling_discard_probs = 1 - np.sqrt(FLAGS.subsampling_thresh / word_probs)
+        subsampling_discard_probs = np.clip(subsampling_discard_probs, a_min=0, a_max=None)
     else:
         subsampling_discard_probs = None
 
     doc_ids, contexts, targets, labels = [], [], [], []
 
-    for doc, doc_id in zipped_docs_and_ids:
+    for doc, doc_id in tqdm(zipped_docs_and_ids, total=len(encoded_documents)):
         _doc_ids, _contexts, _targets, _labels = _build_training_examples(
-            doc, doc_id, FLAGS.window_size, ns_sampling_probs, subsampling_discard_probs)
+            doc, doc_id, FLAGS.window_size, word_vocab, ns_sampling_probs, subsampling_discard_probs)
 
         doc_ids.extend(_doc_ids)
         contexts.extend(_contexts)
