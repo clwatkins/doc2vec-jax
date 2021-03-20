@@ -69,7 +69,7 @@ def _encode_text(document: List[str], vocab: Vocabulary) -> List[int]:
     return [vocab[word] for word in document]
 
 
-def _build_training_examples(text: Sequence[int], doc_id: int,
+def _build_training_examples(text_and_doc_id: Tuple[Sequence[int], int],
                              window_size: int,
                              word_vocab: Vocabulary,
                              ns_sampling_table: Optional[np.ndarray],
@@ -82,8 +82,7 @@ def _build_training_examples(text: Sequence[int], doc_id: int,
     and `subsampling_thresh` params.
 
     Args:
-        text: document, represented by sequence of integer-encoded words
-        doc_id: unique document identifier, assumed integer-encoded
+        text_and_doc_id: tuple of document (represented by sequence of integer-encoded words) and unique identifier
         window_size: width of one-sided window that is used to select context words for the PV-DM model
         word_vocab: word vocabulary
         ns_sampling_table: Optionally, an array of size (len(word_vocab),) that is used to weigh a word's probability
@@ -94,6 +93,7 @@ def _build_training_examples(text: Sequence[int], doc_id: int,
     Returns:
         training examples in their constituent parts -- doc ids, context words, target words, and labels
     """
+    text, doc_id = text_and_doc_id
     doc_ids, contexts, targets, labels = [], [], [], []
     vocab_array = np.array(list(word_vocab.vocab.values()))
 
@@ -235,28 +235,19 @@ def run_pipeline(unused_argv):
         subsampling_discard_probs=subsampling_discard_probs
     )
 
+    doc_ids, contexts, targets, labels = [], [], [], []
     with multiprocessing.Pool() as pool:
-        results = pool.starmap(
-            _training_example_builder, zipped_docs_and_ids)
 
-    _doc_ids, _contexts, _targets, _labels = list(zip(*results))
-
-    del zipped_docs_and_ids
-    del results
-
-    doc_ids = []
-    contexts = []
-    targets = []
-    labels = []
-
-    for chunk in _doc_ids:
-        doc_ids.extend(chunk)
-    for chunk in _contexts:
-        contexts.extend(chunk)
-    for chunk in _targets:
-        targets.extend(chunk)
-    for chunk in _labels:
-        labels.extend(chunk)
+        for result in tqdm(pool.imap_unordered(
+            func=_training_example_builder, 
+            iterable=zipped_docs_and_ids), 
+            total=len(encoded_doc_ids)
+            ):
+            _doc_ids, _contexts, _targets, _labels = result
+            doc_ids.extend(_doc_ids)
+            contexts.extend(_contexts)
+            targets.extend(_targets)
+            labels.extend(_labels)
 
     doc_ids = np.array(doc_ids, dtype=NP_DTYPE)
     target_words = np.array(targets, dtype=NP_DTYPE)
