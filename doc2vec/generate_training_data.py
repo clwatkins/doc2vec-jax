@@ -129,7 +129,7 @@ def _build_training_examples(text: Sequence[int], doc_id: int,
             noise_words = []
 
         doc_ids.extend([doc_id]*(1+FLAGS.ns_ratio))
-        contexts.extend(context_words*(1+FLAGS.ns_ratio))
+        contexts.extend([context_words for _ in range(1+FLAGS.ns_ratio)])
         targets.extend([target_word] + noise_words)
         labels.extend([1] + [0]*FLAGS.ns_ratio)
 
@@ -264,8 +264,6 @@ def run_pipeline(unused_argv):
     labels = np.array(labels, dtype=NP_DTYPE)
 
     # === 7. Save training data and vocabularies to file ===
-    logging.info('Saving data to file')
-
     out_dir = Path(FLAGS.training_data_dir).expanduser() / 'training_data' / \
         DATASET_NAME_PATTERN.format(
             dataset_name=FLAGS.dataset_name,
@@ -276,6 +274,8 @@ def run_pipeline(unused_argv):
             ns_ratio=FLAGS.ns_ratio
         )
     out_dir.mkdir(parents=True, exist_ok=True)
+
+    logging.info('Saving data to %s...', out_dir)
 
     # Save training examples to NPY
     np.save(out_dir / 'doc_ids', doc_ids)

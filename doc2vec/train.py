@@ -125,7 +125,7 @@ def main(_):
                 (logits * label) @ (target_one_hot * label).T
             ))
             neg_loss = jnp.log(jax.nn.sigmoid(
-                -1 * ((logits * (1 - label)) @ (target_one_hot * (1- label)).T)  # invert labels mask to preserve negatives
+                -1 * ((logits * (1 - label)) @ (target_one_hot * (1 - label)).T)  # invert labels mask to preserve negatives
             ))
             return pos_loss + neg_loss
 
@@ -139,15 +139,20 @@ def main(_):
 
         return jnp.mean(ns_loss)
 
-    @jax.jit
-    def calc_accuracy(params: hk.Params, sample: Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]) -> float:
+    # Note we can't JIT compile this because of the `argwhere` condition
+    # Cf https://jax.readthedocs.io/en/latest/_autosummary/jax.numpy.argwhere.html
+    def calc_accuracy(params: hk.Params, sample: Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]) -> float:        
         doc, context, target, labels = sample
+        
+        device_target = jax.device_put(target)
         probs = model.apply(params, doc, context)
-
-        # TODO: figure out labels
+        
+        positive_idxs = jnp.squeeze(jnp.argwhere(labels))
         predicted_class = jnp.argmax(probs, axis=-1)
 
-        return jnp.mean(predicted_class == target)
+        return jnp.mean(
+            predicted_class[positive_idxs] == device_target[positive_idxs]
+        )
 
     def loss_fn(params, batch):
         losses = batched_predict(params, batch)
@@ -227,7 +232,6 @@ def main(_):
         raise AssertionError('Expected optimizer `sgd` or `adam`')
 
     batched_predict = jax.vmap(predict, in_axes=(None, 0))
-    batched_calc_accuracy = jax.vmap(calc_accuracy, in_axes=(None, 0))
 
     init_doc, init_context, _, _ = next(training_iter)
     model_params = model.init(jax.random.PRNGKey(FLAGS.random_seed), init_doc, init_context)
@@ -239,7 +243,7 @@ def main(_):
             model_params, opt_state = update(model_params, opt_state, batch)
 
             if not b % FLAGS.log_every:
-                accuracy = jnp.mean(batched_calc_accuracy(model_params, batch))
+                accuracy = calc_accuracy(model_params, batch)
                 loss = jnp.mean(batched_predict(model_params, batch))
                 accuracy, loss = jax.device_get(accuracy), jax.device_get(loss)
 
