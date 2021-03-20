@@ -244,7 +244,7 @@ def main(_):
 
             if not b % FLAGS.log_every:
                 accuracy = calc_accuracy(model_params, batch)
-                loss = jnp.mean(batched_predict(model_params, batch))
+                loss = -jnp.mean(batched_predict(model_params, batch))
                 accuracy, loss = jax.device_get(accuracy), jax.device_get(loss)
 
                 logging.info(LOG_FMT_STRING.format(
@@ -254,7 +254,7 @@ def main(_):
                     wandb.log({
                         'accuracy': accuracy,
                         'loss': loss,
-                        'batch': batch,
+                        'batch': b,
                         'epoch': epoch
                     })
 

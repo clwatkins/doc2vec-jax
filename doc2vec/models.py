@@ -28,15 +28,15 @@ class PVDM(hk.Module):
         doc_embedding = self.doc_embedder(doc_id)
         word_embeddings = self.word_embedder(context_words)
 
-        doc_embedding_expanded = jnp.expand_dims(doc_embedding, axis=1)
+        doc_embedding_expanded = jnp.expand_dims(doc_embedding, axis=-2)
 
         doc_and_word_embeddings = jnp.concatenate(
-            [doc_embedding_expanded, word_embeddings], axis=1)
+            [doc_embedding_expanded, word_embeddings], axis=-2)
 
         if self.context_mode == 'concat':
             flattened = jnp.reshape(doc_and_word_embeddings, (-1, (self.window_size + 1) * self.embedding_size))
         elif self.context_mode == 'average':
-            flattened = jnp.mean(doc_and_word_embeddings, axis=1)  # Average across dim concatting doc + word vectors
+            flattened = jnp.mean(doc_and_word_embeddings, axis=-2)  # Average across dim concatting doc + word vectors
         else:
             raise ValueError('context_mode must be set to either `concat` or `average`')
 
